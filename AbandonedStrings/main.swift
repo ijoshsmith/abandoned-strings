@@ -65,6 +65,8 @@ func extractStringIdentifierFromTrimmedLine(line: String) -> String {
     return identifier
 }
 
+// MARK: - Abandoned identifier detection
+
 func findStringIdentifiersIn(stringsFile: String, abandonedBySourceCode sourceCode: String) -> [String] {
     return extractStringIdentifiersFrom(stringsFile).filter { identifier in
         let quotedIdentifier = "\"\(identifier)\""
@@ -72,8 +74,6 @@ func findStringIdentifiersIn(stringsFile: String, abandonedBySourceCode sourceCo
         return isAbandoned
     }
 }
-
-// MARK: - Abandoned identifier detection & display
 
 typealias StringsFileToAbandonedIdentifiersMap = [String: [String]]
 
@@ -90,6 +90,12 @@ func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandoned
     return map
 }
 
+// MARK: - Engine
+
+func getRootDirectory() -> String? {
+    return Process.arguments.count == 2 ? Process.arguments[1] : nil
+}
+
 func displayAbandonedIdentifiersInMap(map: StringsFileToAbandonedIdentifiersMap) {
     for file in map.keys.sort() {
         print("\(file)")
@@ -98,12 +104,6 @@ func displayAbandonedIdentifiersInMap(map: StringsFileToAbandonedIdentifiersMap)
         }
         print("")
     }
-}
-
-// MARK: - Engine
-
-func getRootDirectory() -> String? {
-    return Process.arguments.count == 2 ? Process.arguments[1] : nil
 }
 
 if let rootDirectory = getRootDirectory() {
