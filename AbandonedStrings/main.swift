@@ -52,7 +52,7 @@ func extractStringIdentifiersFrom(stringsFile: String) -> [String] {
     return contentsOfFile(stringsFile)
         .componentsSeparatedByString("\n")
         .map    { $0.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet()) }
-        .filter { $0.characters.count > 0 && $0.hasPrefix(doubleQuote) }
+        .filter { $0.hasPrefix(doubleQuote) }
         .map    { extractStringIdentifierFromTrimmedLine($0) }
 }
 
