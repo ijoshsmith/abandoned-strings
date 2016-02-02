@@ -65,7 +65,7 @@ func extractStringIdentifierFromTrimmedLine(line: String) -> String {
     return identifier
 }
 
-func findIdentifiersInStringsFile(stringsFile: String, abandonedBySourceCode sourceCode: String) -> [String] {
+func findStringIdentifiersIn(stringsFile: String, abandonedBySourceCode sourceCode: String) -> [String] {
     return extractStringIdentifiersFrom(stringsFile).filter { identifier in
         let quotedIdentifier = "\"\(identifier)\""
         let isAbandoned = sourceCode.containsString(quotedIdentifier) == false
@@ -82,7 +82,7 @@ func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandoned
     let sourceCode = concatenateAllSourceCodeIn(rootDirectory)
     let stringsFiles = findFilesIn(rootDirectory, withExtensions: ["strings"])
     for stringsFile in stringsFiles {
-        let abandonedIdentifiers = findIdentifiersInStringsFile(stringsFile, abandonedBySourceCode: sourceCode)
+        let abandonedIdentifiers = findStringIdentifiersIn(stringsFile, abandonedBySourceCode: sourceCode)
         if abandonedIdentifiers.isEmpty == false {
             map[stringsFile] = abandonedIdentifiers
         }
