@@ -24,7 +24,7 @@ The search logic does not take into account if code is commented out, so it won'
 
 It also does not try to determine the context in which string identifiers are used, such as whether or not the string is being used to look up a localized string value or if it just happens to match a resource string identifier by coincidence. 
 
-Also, this program is ineffective if resource string identifiers are referenced via constants.
+Also, this program is ineffective if resource string identifiers are referenced via constants or dynamically constructed.
 
 ## Disclaimer
-As noted above, this program uses a simple heuristic and is not guaranteed to produce perfect results for every codebase. Be sure to verify that a resource string is not being used before removing it from your app.
+As noted above, this program uses a simple heuristic and is not guaranteed to produce perfect results for every codebase.
