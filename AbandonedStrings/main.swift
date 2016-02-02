@@ -75,10 +75,10 @@ func findIdentifiersInStringsFile(stringsFile: String, abandonedBySourceCode sou
 
 // MARK: - Abandoned identifier detection & display
 
-typealias StringsFileToAbandonedIdentifierMap = [String: [String]]
+typealias StringsFileToAbandonedIdentifiersMap = [String: [String]]
 
-func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandonedIdentifierMap {
-    var map = StringsFileToAbandonedIdentifierMap()
+func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandonedIdentifiersMap {
+    var map = StringsFileToAbandonedIdentifiersMap()
     let sourceCode = concatenateAllSourceCodeIn(rootDirectory)
     let stringsFiles = findFilesIn(rootDirectory, withExtensions: ["strings"])
     for stringsFile in stringsFiles {
@@ -90,7 +90,7 @@ func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandoned
     return map
 }
 
-func displayAbandonedIdentifiersInMap(map: StringsFileToAbandonedIdentifierMap) {
+func displayAbandonedIdentifiersInMap(map: StringsFileToAbandonedIdentifiersMap) {
     for file in map.keys.sort() {
         print("\(file)")
         for identifier in map[file]!.sort() {
