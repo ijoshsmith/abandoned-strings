@@ -20,11 +20,11 @@ If a `.strings` file contains…
 ## More details
 This program searches through the source code files in an iOS app project, looking for resource strings (in a `.strings` file) whose identifiers are not referenced by the application's source code. 
 
-The search logic does not take into account if code is commented out, so it can produce false positives if your application has a lot of commented-out code. 
+The search logic does not take into account if code is commented out, so it won't be as reliable if your application has a lot of commented-out code. 
 
 It also does not try to determine the context in which string identifiers are used, such as whether or not the string is being used to look up a localized string value or if it just happens to match a resource string identifier by coincidence. 
 
 Also, this program is ineffective if resource string identifiers are referenced via constants.
 
 ## Disclaimer
-As noted above, this program can yield false positives. Be sure to verify that a resource string is not being used before removing it from your app.
+As noted above, this program uses a simple heuristic and is not guaranteed to produce perfect results for every codebase. Be sure to verify that a resource string is not being used before removing it from your app.
