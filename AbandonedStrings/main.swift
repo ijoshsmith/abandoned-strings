@@ -33,7 +33,10 @@ func findFilesIn(directory: String, withExtensions extensions: [String]) -> [Str
 }
 
 func contentsOfFile(filePath: String) -> String {
-    do    { return try String(contentsOfFile: filePath, encoding: NSUTF8StringEncoding) }
+    do {
+        let usedEncoding = UnsafeMutablePointer<NSStringEncoding>()
+        return try String(contentsOfFile: filePath, usedEncoding: usedEncoding)
+    }
     catch { return "" }
 }
 
