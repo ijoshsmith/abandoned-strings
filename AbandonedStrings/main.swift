@@ -6,42 +6,46 @@
 //  Copyright © 2016 iJoshSmith. All rights reserved.
 //
 
-/* 
-For overview and usage information refer to https://github.com/ijoshsmith/abandoned-strings 
-*/
+/*
+ For overview and usage information refer to https://github.com/ijoshsmith/abandoned-strings
+ */
 
 import Foundation
 
 // MARK: - File processing
 
-func findFilesIn(directory: String, withExtensions extensions: [String]) -> [String] {
-    let fileManager = NSFileManager.defaultManager()
-    guard let enumerator: NSDirectoryEnumerator = fileManager.enumeratorAtPath(directory) else {
-        print("Failed to create enumerator for directory: \(directory)")
-        return []
-    }
-    
+func findFilesIn(_ directories: [String], withExtensions extensions: [String]) -> [String] {
+    let fileManager = FileManager.default
     var files = [String]()
-    while let path = enumerator.nextObject() as? String {
-        let fileExtension = (path as NSString).pathExtension.lowercaseString
-        if extensions.contains(fileExtension) {
-            let fullPath = (directory as NSString).stringByAppendingPathComponent(path)
-            files.append(fullPath)
+    for directory in directories {
+        guard let enumerator: FileManager.DirectoryEnumerator = fileManager.enumerator(atPath: directory) else {
+            print("Failed to create enumerator for directory: \(directory)")
+            return []
+        }
+        while let path = enumerator.nextObject() as? String {
+            let fileExtension = (path as NSString).pathExtension.lowercased()
+            if extensions.contains(fileExtension) {
+                let fullPath = (directory as NSString).appendingPathComponent(path)
+                files.append(fullPath)
+            }
         }
     }
     return files
 }
 
-func contentsOfFile(filePath: String) -> String {
+func contentsOfFile(_ filePath: String) -> String {
     do {
-        let usedEncoding = UnsafeMutablePointer<NSStringEncoding>()
-        return try String(contentsOfFile: filePath, usedEncoding: usedEncoding)
+        return try String(contentsOfFile: filePath, encoding: String.Encoding.utf8)
     }
     catch { return "" }
 }
 
-func concatenateAllSourceCodeIn(directory: String) -> String {
-    let sourceFiles = findFilesIn(directory, withExtensions: ["h", "m", "swift"])
+func concatenateAllSourceCodeIn(_ directories: [String], withStoryboard: Bool) -> String {
+    var extensions = ["h", "m", "swift"]
+    if withStoryboard {
+        extensions.append("storyboard")
+    }
+    let sourceFiles = findFilesIn(directories, withExtensions: extensions)
     return sourceFiles.reduce("") { (accumulator, sourceFile) -> String in
         return accumulator + contentsOfFile(sourceFile)
     }
@@ -51,39 +55,39 @@ func concatenateAllSourceCodeIn(directory: String) -> String {
 
 let doubleQuote = "\""
 
-func extractStringIdentifiersFrom(stringsFile: String) -> [String] {
+func extractStringIdentifiersFrom(_ stringsFile: String) -> [String] {
     return contentsOfFile(stringsFile)
-        .componentsSeparatedByString("\n")
-        .map    { $0.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceCharacterSet()) }
+        .components(separatedBy: "\n")
+        .map    { $0.trimmingCharacters(in: CharacterSet.whitespaces) }
         .filter { $0.hasPrefix(doubleQuote) }
         .map    { extractStringIdentifierFromTrimmedLine($0) }
 }
 
-func extractStringIdentifierFromTrimmedLine(line: String) -> String {
-    let indexAfterFirstQuote = line.startIndex.successor()
-    let lineWithoutFirstQuote = line.substringFromIndex(indexAfterFirstQuote)
-    let endQuoteRange = lineWithoutFirstQuote.rangeOfString(doubleQuote)!
-    let identifierEndIndex = endQuoteRange.endIndex.predecessor()
-    let identifier = lineWithoutFirstQuote.substringToIndex(identifierEndIndex)
+func extractStringIdentifierFromTrimmedLine(_ line: String) -> String {
+    let indexAfterFirstQuote = line.characters.index(after: line.startIndex)
+    let lineWithoutFirstQuote = line.substring(from: indexAfterFirstQuote)
+    let endIndex = lineWithoutFirstQuote.characters.index(of:"\"")
+    let identifier = lineWithoutFirstQuote.substring(to: endIndex!)
     return identifier
 }
 
 // MARK: - Abandoned identifier detection
 
-func findStringIdentifiersIn(stringsFile: String, abandonedBySourceCode sourceCode: String) -> [String] {
+func findStringIdentifiersIn(_ stringsFile: String, abandonedBySourceCode sourceCode: String) -> [String] {
     return extractStringIdentifiersFrom(stringsFile).filter { identifier in
         let quotedIdentifier = "\"\(identifier)\""
-        let isAbandoned = sourceCode.containsString(quotedIdentifier) == false
+        let quotedIdentifierForStoryboard = "\"@\(identifier)\""
+        let isAbandoned = (sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false)
         return isAbandoned
     }
 }
 
 typealias StringsFileToAbandonedIdentifiersMap = [String: [String]]
 
-func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandonedIdentifiersMap {
+func findAbandonedIdentifiersIn(_ rootDirectories: [String], withStoryboard: Bool) -> StringsFileToAbandonedIdentifiersMap {
     var map = StringsFileToAbandonedIdentifiersMap()
-    let sourceCode = concatenateAllSourceCodeIn(rootDirectory)
-    let stringsFiles = findFilesIn(rootDirectory, withExtensions: ["strings"])
+    let sourceCode = concatenateAllSourceCodeIn(rootDirectories, withStoryboard: withStoryboard)
+    let stringsFiles = findFilesIn(rootDirectories, withExtensions: ["strings"])
     for stringsFile in stringsFiles {
         let abandonedIdentifiers = findStringIdentifiersIn(stringsFile, abandonedBySourceCode: sourceCode)
         if abandonedIdentifiers.isEmpty == false {
@@ -95,23 +99,39 @@ func findAbandonedIdentifiersIn(rootDirectory: String) -> StringsFileToAbandoned
 
 // MARK: - Engine
 
-func getRootDirectory() -> String? {
-    return Process.arguments.count == 2 ? Process.arguments[1] : nil
+func getRootDirectories() -> [String]? {
+    var c = [String]()
+    for arg in CommandLine.arguments {
+        c.append(arg)
+    }
+    c.remove(at: 0)
+    if isOptionalParameterForStoryboardAvailable() {
+        c.removeLast()
+    }
+    return c
 }
 
-func displayAbandonedIdentifiersInMap(map: StringsFileToAbandonedIdentifiersMap) {
-    for file in map.keys.sort() {
+func isOptionalParameterForStoryboardAvailable() -> Bool {
+    if CommandLine.arguments.last == "storyboard" {
+        return true
+    }
+    return false
+}
+
+func displayAbandonedIdentifiersInMap(_ map: StringsFileToAbandonedIdentifiersMap) {
+    for file in map.keys.sorted() {
         print("\(file)")
-        for identifier in map[file]!.sort() {
+        for identifier in map[file]!.sorted() {
             print("  \(identifier)")
         }
         print("")
     }
 }
 
-if let rootDirectory = getRootDirectory() {
+if let rootDirectories = getRootDirectories() {
     print("Searching for abandoned resource strings…")
-    let map = findAbandonedIdentifiersIn(rootDirectory)
+    let withStoryboard = isOptionalParameterForStoryboardAvailable()
+    let map = findAbandonedIdentifiersIn(rootDirectories, withStoryboard: withStoryboard)
     if map.isEmpty {
         print("No abandoned resource strings were detected.")
     }
