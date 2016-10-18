@@ -112,10 +112,7 @@ func getRootDirectories() -> [String]? {
 }
 
 func isOptionalParameterForStoryboardAvailable() -> Bool {
-    if CommandLine.arguments.last == "storyboard" {
-        return true
-    }
-    return false
+    return CommandLine.arguments.last == "storyboard"
 }
 
 func displayAbandonedIdentifiersInMap(_ map: StringsFileToAbandonedIdentifiersMap) {
