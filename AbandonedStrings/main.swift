@@ -169,7 +169,7 @@ if let rootDirectories = getRootDirectories() {
                 print("\n\nNow modifying \(stringsFilePath) ...")
                 let updatedStringsFileContent = stringsFile(stringsFilePath, without: map[stringsFilePath]!)
                 do {
-                    try updatedStringsFileContent.write(toFile: stringsFilePath, atomically: false, encoding: .utf8)
+                    try updatedStringsFileContent.write(toFile: stringsFilePath, atomically: true, encoding: .utf8)
                 } catch {
                     print("ERROR writing file: \(stringsFilePath)")
                 }
