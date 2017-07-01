@@ -14,6 +14,9 @@ import Foundation
 
 // MARK: - File processing
 
+let dispatchGroup = DispatchGroup.init()
+let serialWriterQueue = DispatchQueue.init(label: "writer")
+
 func findFilesIn(_ directories: [String], withExtensions extensions: [String]) -> [String] {
     let fileManager = FileManager.default
     var files = [String]()
@@ -89,11 +92,18 @@ func findAbandonedIdentifiersIn(_ rootDirectories: [String], withStoryboard: Boo
     let sourceCode = concatenateAllSourceCodeIn(rootDirectories, withStoryboard: withStoryboard)
     let stringsFiles = findFilesIn(rootDirectories, withExtensions: ["strings"])
     for stringsFile in stringsFiles {
-        let abandonedIdentifiers = findStringIdentifiersIn(stringsFile, abandonedBySourceCode: sourceCode)
-        if abandonedIdentifiers.isEmpty == false {
-            map[stringsFile] = abandonedIdentifiers
+        dispatchGroup.enter()
+        DispatchQueue.global().async {
+            let abandonedIdentifiers = findStringIdentifiersIn(stringsFile, abandonedBySourceCode: sourceCode)
+            if abandonedIdentifiers.isEmpty == false {
+                serialWriterQueue.async {
+                    map[stringsFile] = abandonedIdentifiers
+                }
+            }
+            dispatchGroup.leave()
         }
     }
+    dispatchGroup.wait()
     return map
 }
 
