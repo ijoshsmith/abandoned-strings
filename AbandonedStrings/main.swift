@@ -109,9 +109,12 @@ func findAbandonedIdentifiersIn(_ rootDirectories: [String], withStoryboard: Boo
             if abandonedIdentifiers.isEmpty == false {
                 serialWriterQueue.async {
                     map[stringsFile] = abandonedIdentifiers
+                    dispatchGroup.leave()
                 }
+            } else {
+                NSLog("\(stringsFile) has no abandonedIdentifiers")
+                dispatchGroup.leave()
             }
-            dispatchGroup.leave()
         }
     }
     dispatchGroup.wait()
