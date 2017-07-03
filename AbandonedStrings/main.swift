@@ -14,6 +14,9 @@ import Foundation
 
 // MARK: - File processing
 
+let dispatchGroup = DispatchGroup.init()
+let serialWriterQueue = DispatchQueue.init(label: "writer")
+
 func findFilesIn(_ directories: [String], withExtensions extensions: [String]) -> [String] {
     let fileManager = FileManager.default
     var files = [String]()
@@ -82,6 +85,17 @@ func findStringIdentifiersIn(_ stringsFile: String, abandonedBySourceCode source
     }
 }
 
+func stringsFile(_ stringsFile: String, without identifiers: [String]) -> String {
+    return contentsOfFile(stringsFile)
+        .components(separatedBy: "\n")
+        .filter({ (line) in
+            guard line.hasPrefix(doubleQuote) else { return true } // leave non-strings lines like comments in
+            let lineIdentifier = extractStringIdentifierFromTrimmedLine(line.trimmingCharacters(in: CharacterSet.whitespaces))
+            return identifiers.contains(lineIdentifier) == false
+        })
+        .joined(separator: "\n")
+}
+
 typealias StringsFileToAbandonedIdentifiersMap = [String: [String]]
 
 func findAbandonedIdentifiersIn(_ rootDirectories: [String], withStoryboard: Bool) -> StringsFileToAbandonedIdentifiersMap {
@@ -89,11 +103,21 @@ func findAbandonedIdentifiersIn(_ rootDirectories: [String], withStoryboard: Boo
     let sourceCode = concatenateAllSourceCodeIn(rootDirectories, withStoryboard: withStoryboard)
     let stringsFiles = findFilesIn(rootDirectories, withExtensions: ["strings"])
     for stringsFile in stringsFiles {
-        let abandonedIdentifiers = findStringIdentifiersIn(stringsFile, abandonedBySourceCode: sourceCode)
-        if abandonedIdentifiers.isEmpty == false {
-            map[stringsFile] = abandonedIdentifiers
+        dispatchGroup.enter()
+        DispatchQueue.global().async {
+            let abandonedIdentifiers = findStringIdentifiersIn(stringsFile, abandonedBySourceCode: sourceCode)
+            if abandonedIdentifiers.isEmpty == false {
+                serialWriterQueue.async {
+                    map[stringsFile] = abandonedIdentifiers
+                    dispatchGroup.leave()
+                }
+            } else {
+                NSLog("\(stringsFile) has no abandonedIdentifiers")
+                dispatchGroup.leave()
+            }
         }
     }
+    dispatchGroup.wait()
     return map
 }
 
@@ -108,11 +132,18 @@ func getRootDirectories() -> [String]? {
     if isOptionalParameterForStoryboardAvailable() {
         c.removeLast()
     }
+    if isOptionaParameterForWritingAvailable() {
+        c.remove(at: c.index(of: "write")!)
+    }
     return c
 }
 
 func isOptionalParameterForStoryboardAvailable() -> Bool {
     return CommandLine.arguments.last == "storyboard"
+}
+
+func isOptionaParameterForWritingAvailable() -> Bool {
+    return CommandLine.arguments.contains("write")
 }
 
 func displayAbandonedIdentifiersInMap(_ map: StringsFileToAbandonedIdentifiersMap) {
@@ -135,8 +166,19 @@ if let rootDirectories = getRootDirectories() {
     else {
         print("Abandoned resource strings were detected:")
         displayAbandonedIdentifiersInMap(map)
+        
+        if isOptionaParameterForWritingAvailable() {
+            map.keys.forEach { (stringsFilePath) in
+                print("\n\nNow modifying \(stringsFilePath) ...")
+                let updatedStringsFileContent = stringsFile(stringsFilePath, without: map[stringsFilePath]!)
+                do {
+                    try updatedStringsFileContent.write(toFile: stringsFilePath, atomically: true, encoding: .utf8)
+                } catch {
+                    print("ERROR writing file: \(stringsFilePath)")
+                }
+            }
+        }
     }
-}
-else {
+} else {
     print("Please provide the root directory for source code files as a command line argument.")
 }
