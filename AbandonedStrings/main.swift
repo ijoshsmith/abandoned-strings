@@ -1,3 +1,4 @@
+#!/usr/bin/env xcrun swift
 //
 //  main.swift
 //  AbandonedStrings
