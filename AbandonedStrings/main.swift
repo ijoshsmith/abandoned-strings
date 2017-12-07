@@ -45,7 +45,7 @@ func contentsOfFile(_ filePath: String) -> String {
 }
 
 func concatenateAllSourceCodeIn(_ directories: [String], withStoryboard: Bool) -> String {
-    var extensions = ["h", "m", "swift"]
+    var extensions = ["h", "m", "swift", "jsbundle"]
     if withStoryboard {
         extensions.append("storyboard")
     }
@@ -81,7 +81,9 @@ func findStringIdentifiersIn(_ stringsFile: String, abandonedBySourceCode source
     return extractStringIdentifiersFrom(stringsFile).filter { identifier in
         let quotedIdentifier = "\"\(identifier)\""
         let quotedIdentifierForStoryboard = "\"@\(identifier)\""
-        let isAbandoned = (sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false)
+        let signalQuotedIdentifierForJs = "'\(identifier)'"
+        let isAbandoned = (sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false &&
+            sourceCode.contains(signalQuotedIdentifierForJs) == false)
         return isAbandoned
     }
 }
