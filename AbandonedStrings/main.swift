@@ -68,11 +68,11 @@ func extractStringIdentifiersFrom(_ stringsFile: String) -> [String] {
 }
 
 func extractStringIdentifierFromTrimmedLine(_ line: String) -> String {
-    let indexAfterFirstQuote = line.characters.index(after: line.startIndex)
-    let lineWithoutFirstQuote = line.substring(from: indexAfterFirstQuote)
-    let endIndex = lineWithoutFirstQuote.characters.index(of:"\"")
-    let identifier = lineWithoutFirstQuote.substring(to: endIndex!)
-    return identifier
+    let indexAfterFirstQuote = line.index(after: line.startIndex)
+    let lineWithoutFirstQuote = line[indexAfterFirstQuote...]
+    let endIndex = lineWithoutFirstQuote.index(of:"\"")!
+    let identifier = lineWithoutFirstQuote[..<endIndex]
+    return String(identifier)
 }
 
 // MARK: - Abandoned identifier detection
