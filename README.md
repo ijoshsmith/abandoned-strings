@@ -17,7 +17,7 @@ If a `.strings` file contains…
 
 `"some_string_identifier"`
 
-…is not found in any of the source code files (namely, files with a `.h`, `.m`, or `.swift` extension).
+…is not found in any of the source code files (namely, files with a `.h`, `.m`, `.swift` or `.jsbundle` extension).
 
 ## More details
 This program searches through the source code files in an iOS app project, looking for resource strings (in a `.strings` file) whose identifiers are not referenced by the application's source code. 

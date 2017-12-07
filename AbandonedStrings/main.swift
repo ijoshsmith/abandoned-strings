@@ -45,7 +45,7 @@ func contentsOfFile(_ filePath: String) -> String {
 }
 
 func concatenateAllSourceCodeIn(_ directories: [String], withStoryboard: Bool) -> String {
-    var extensions = ["h", "m", "swift"]
+    var extensions = ["h", "m", "swift", "jsbundle"]
     if withStoryboard {
         extensions.append("storyboard")
     }
@@ -68,11 +68,11 @@ func extractStringIdentifiersFrom(_ stringsFile: String) -> [String] {
 }
 
 func extractStringIdentifierFromTrimmedLine(_ line: String) -> String {
-    let indexAfterFirstQuote = line.characters.index(after: line.startIndex)
-    let lineWithoutFirstQuote = line.substring(from: indexAfterFirstQuote)
-    let endIndex = lineWithoutFirstQuote.characters.index(of:"\"")
-    let identifier = lineWithoutFirstQuote.substring(to: endIndex!)
-    return identifier
+    let indexAfterFirstQuote = line.index(after: line.startIndex)
+    let lineWithoutFirstQuote = line[indexAfterFirstQuote...]
+    let endIndex = lineWithoutFirstQuote.index(of:"\"")!
+    let identifier = lineWithoutFirstQuote[..<endIndex]
+    return String(identifier)
 }
 
 // MARK: - Abandoned identifier detection
@@ -81,7 +81,9 @@ func findStringIdentifiersIn(_ stringsFile: String, abandonedBySourceCode source
     return extractStringIdentifiersFrom(stringsFile).filter { identifier in
         let quotedIdentifier = "\"\(identifier)\""
         let quotedIdentifierForStoryboard = "\"@\(identifier)\""
-        let isAbandoned = (sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false)
+        let signalQuotedIdentifierForJs = "'\(identifier)'"
+        let isAbandoned = (sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false &&
+            sourceCode.contains(signalQuotedIdentifierForJs) == false)
         return isAbandoned
     }
 }
