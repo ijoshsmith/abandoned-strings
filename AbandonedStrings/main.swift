@@ -39,9 +39,11 @@ func findFilesIn(_ directories: [String], withExtensions extensions: [String]) -
 
 func contentsOfFile(_ filePath: String) -> String {
     do {
-        return try String(contentsOfFile: filePath, encoding: String.Encoding.utf8)
+        return try String(contentsOfFile: filePath)
     }
-    catch { return "" }
+    catch { 
+        return ""
+    }
 }
 
 func concatenateAllSourceCodeIn(_ directories: [String], withStoryboard: Bool) -> String {
