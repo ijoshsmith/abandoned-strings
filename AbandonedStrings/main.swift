@@ -42,7 +42,8 @@ func contentsOfFile(_ filePath: String) -> String {
         return try String(contentsOfFile: filePath)
     }
     catch { 
-        return ""
+        print("cannot read file!!!")
+        exit(1)
     }
 }
 
