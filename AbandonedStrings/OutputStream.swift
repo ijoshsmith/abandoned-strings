@@ -33,8 +33,9 @@ struct OutputStream: TextOutputStream {
     }
 
     func write(_ string: String) {
-        guard let data = string.data(using: stringEncoding) else {
-            let errorString: String = "Failed to convert string: \"\(string)\" to Data using string encoding: \"\(stringEncoding)\""
+        let outputString: String = "\(string)\n"
+        guard let data = outputString.data(using: stringEncoding) else {
+            let errorString: String = "Failed to convert string: \"\(string)\" to Data using string encoding: \"\(stringEncoding)\"\n"
             forceWriteToStdErr(errorString)
             return
         }
@@ -44,7 +45,7 @@ struct OutputStream: TextOutputStream {
     
     func forceWriteToStdErr(_ string: String) {
         guard let data = string.data(using: stringEncoding) else {
-            fatalError("Failed to write to stderr with string: \(string)")
+            fatalError("Failed to write to stderr with string: \(string)\n")
         }
         switch streamType {
         case .stdErr:
