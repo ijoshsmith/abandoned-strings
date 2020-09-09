@@ -17,13 +17,15 @@ import Foundation
 
 let dispatchGroup = DispatchGroup.init()
 let serialWriterQueue = DispatchQueue.init(label: "writer")
+let standardOut: OutputStream = OutputStream(streamType: .stdOut, stringEncoding: .utf8)
+let standardError: OutputStream = OutputStream(streamType: .stdErr, stringEncoding: .utf8)
 
 func findFilesIn(_ directories: [String], withExtensions extensions: [String]) -> [String] {
     let fileManager = FileManager.default
     var files = [String]()
     for directory in directories {
         guard let enumerator: FileManager.DirectoryEnumerator = fileManager.enumerator(atPath: directory) else {
-            print("Failed to create enumerator for directory: \(directory)")
+            standardError.write("Failed to create enumerator for directory: \(directory)")
             return []
         }
         while let path = enumerator.nextObject() as? String {
@@ -41,8 +43,8 @@ func contentsOfFile(_ filePath: String) -> String {
     do {
         return try String(contentsOfFile: filePath)
     }
-    catch { 
-        print("cannot read file!!!")
+    catch {
+        standardError.forceWriteToStdErr("Cannot find file at path: \(filePath)")
         exit(1)
     }
 }
@@ -118,7 +120,7 @@ func findAbandonedIdentifiersIn(_ rootDirectories: [String], withStoryboard: Boo
                     dispatchGroup.leave()
                 }
             } else {
-                NSLog("\(stringsFile) has no abandonedIdentifiers")
+                standardOut.write("\(stringsFile) has no abandonedIdentifiers")
                 dispatchGroup.leave()
             }
         }
@@ -154,37 +156,37 @@ func isOptionaParameterForWritingAvailable() -> Bool {
 
 func displayAbandonedIdentifiersInMap(_ map: StringsFileToAbandonedIdentifiersMap) {
     for file in map.keys.sorted() {
-        print("\(file)")
+        standardOut.write("\(file)")
         for identifier in map[file]!.sorted() {
-            print("  \(identifier)")
+            standardOut.write("  \(identifier)")
         }
-        print("")
+        standardOut.write("")
     }
 }
 
 if let rootDirectories = getRootDirectories() {
-    print("Searching for abandoned resource strings…")
+    standardOut.write("Searching for abandoned resource strings…")
     let withStoryboard = isOptionalParameterForStoryboardAvailable()
     let map = findAbandonedIdentifiersIn(rootDirectories, withStoryboard: withStoryboard)
     if map.isEmpty {
-        print("No abandoned resource strings were detected.")
+        standardOut.write("No abandoned resource strings were detected.")
     }
     else {
-        print("Abandoned resource strings were detected:")
+        standardOut.write("Abandoned resource strings were detected:")
         displayAbandonedIdentifiersInMap(map)
         
         if isOptionaParameterForWritingAvailable() {
             map.keys.forEach { (stringsFilePath) in
-                print("\n\nNow modifying \(stringsFilePath) ...")
+                standardOut.write("\n\nNow modifying \(stringsFilePath) ...")
                 let updatedStringsFileContent = stringsFile(stringsFilePath, without: map[stringsFilePath]!)
                 do {
                     try updatedStringsFileContent.write(toFile: stringsFilePath, atomically: true, encoding: .utf8)
                 } catch {
-                    print("ERROR writing file: \(stringsFilePath)")
+                    standardError.write("ERROR writing file: \(stringsFilePath)")
                 }
             }
         }
     }
 } else {
-    print("Please provide the root directory for source code files as a command line argument.")
+    standardOut.write("Please provide the root directory for source code files as a command line argument.")
 }
