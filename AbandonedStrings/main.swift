@@ -42,7 +42,7 @@ func contentsOfFile(_ filePath: String) -> String {
         return try String(contentsOfFile: filePath)
     }
     catch { 
-        print("cannot read file!!!")
+        print(error.localizedDescription)
         exit(1)
     }
 }
@@ -52,7 +52,10 @@ func concatenateAllSourceCodeIn(_ directories: [String], withStoryboard: Bool) -
     if withStoryboard {
         extensions.append("storyboard")
     }
-    let sourceFiles = findFilesIn(directories, withExtensions: extensions)
+    
+    var sourceFiles = findFilesIn(directories, withExtensions: extensions)
+    sourceFiles.removeAll { $0.contains("R.generated.swift") }
+    
     return sourceFiles.reduce("") { (accumulator, sourceFile) -> String in
         return accumulator + contentsOfFile(sourceFile)
     }
@@ -73,20 +76,37 @@ func extractStringIdentifiersFrom(_ stringsFile: String) -> [String] {
 func extractStringIdentifierFromTrimmedLine(_ line: String) -> String {
     let indexAfterFirstQuote = line.index(after: line.startIndex)
     let lineWithoutFirstQuote = line[indexAfterFirstQuote...]
-    let endIndex = lineWithoutFirstQuote.index(of:"\"")!
+    let endIndex = lineWithoutFirstQuote.firstIndex(of:"\"")!
     let identifier = lineWithoutFirstQuote[..<endIndex]
     return String(identifier)
 }
 
 // MARK: - Abandoned identifier detection
 
+func makeRSwiftIdentifier(from identified: String) -> String {
+    let components = identified.components(separatedBy: ".")
+    let reducedComponents = components.reduce("") {
+        if $0.isEmpty {
+            return $1
+        } else {
+            return $0 + $1.prefix(1).uppercased() + $1.dropFirst()
+        }
+    }
+    
+    return "R.string.localizable." + reducedComponents
+}
+
 func findStringIdentifiersIn(_ stringsFile: String, abandonedBySourceCode sourceCode: String) -> [String] {
     return extractStringIdentifiersFrom(stringsFile).filter { identifier in
         let quotedIdentifier = "\"\(identifier)\""
         let quotedIdentifierForStoryboard = "\"@\(identifier)\""
         let signalQuotedIdentifierForJs = "'\(identifier)'"
-        let isAbandoned = (sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false &&
-            sourceCode.contains(signalQuotedIdentifierForJs) == false)
+        let rSwiftIdentifier = makeRSwiftIdentifier(from: identifier)
+        
+        let isAbandoned = sourceCode.contains(quotedIdentifier) == false && sourceCode.contains(quotedIdentifierForStoryboard) == false &&
+            sourceCode.contains(signalQuotedIdentifierForJs) == false &&
+            sourceCode.contains(rSwiftIdentifier) == false
+        
         return isAbandoned
     }
 }
@@ -138,8 +158,8 @@ func getRootDirectories() -> [String]? {
     if isOptionalParameterForStoryboardAvailable() {
         c.removeLast()
     }
-    if isOptionaParameterForWritingAvailable() {
-        c.remove(at: c.index(of: "write")!)
+    if isOptionalParameterForWritingAvailable() {
+        c.remove(at: c.firstIndex(of: "write")!)
     }
     return c
 }
@@ -148,7 +168,7 @@ func isOptionalParameterForStoryboardAvailable() -> Bool {
     return CommandLine.arguments.last == "storyboard"
 }
 
-func isOptionaParameterForWritingAvailable() -> Bool {
+func isOptionalParameterForWritingAvailable() -> Bool {
     return CommandLine.arguments.contains("write")
 }
 
@@ -173,7 +193,7 @@ if let rootDirectories = getRootDirectories() {
         print("Abandoned resource strings were detected:")
         displayAbandonedIdentifiersInMap(map)
         
-        if isOptionaParameterForWritingAvailable() {
+        if isOptionalParameterForWritingAvailable() {
             map.keys.forEach { (stringsFilePath) in
                 print("\n\nNow modifying \(stringsFilePath) ...")
                 let updatedStringsFileContent = stringsFile(stringsFilePath, without: map[stringsFilePath]!)
