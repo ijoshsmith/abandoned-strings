@@ -1,8 +1,6 @@
 # Abandoned Resource String Detection
 This command line program detects unused resource strings in an iOS or OS X application.
 
-Updated to Swift 3, thanks to @astaeck on Oct-17-2016
-
 ## Usage
 Open a Terminal to the directory which contains the *AbandonedStrings* executable, and run the following command:
 
