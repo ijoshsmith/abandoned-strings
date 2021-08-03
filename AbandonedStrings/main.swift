@@ -42,7 +42,7 @@ func contentsOfFile(_ filePath: String) -> String {
         return try String(contentsOfFile: filePath)
     }
     catch { 
-        print("cannot read file!!!")
+        print("cannot read file: \(filePath)", error)
         exit(1)
     }
 }
@@ -73,7 +73,7 @@ func extractStringIdentifiersFrom(_ stringsFile: String) -> [String] {
 func extractStringIdentifierFromTrimmedLine(_ line: String) -> String {
     let indexAfterFirstQuote = line.index(after: line.startIndex)
     let lineWithoutFirstQuote = line[indexAfterFirstQuote...]
-    let endIndex = lineWithoutFirstQuote.index(of:"\"")!
+  let endIndex = lineWithoutFirstQuote.firstIndex(of:"\"")!
     let identifier = lineWithoutFirstQuote[..<endIndex]
     return String(identifier)
 }
@@ -139,7 +139,7 @@ func getRootDirectories() -> [String]? {
         c.removeLast()
     }
     if isOptionaParameterForWritingAvailable() {
-        c.remove(at: c.index(of: "write")!)
+      c.remove(at: c.firstIndex(of: "write")!)
     }
     return c
 }
